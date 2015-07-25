@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html ng-app="myApp">
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <link rel="stylesheet" href="/bower_components/bootstrap/dist/css/bootstrap.css"/>
+    <link rel="stylesheet" href="/bower_components/bootstrap/dist/css/bootstrap-theme.css"/>
+    <script src="/bower_components/angular/angular.min.js"></script>
+    <script type="text/ng-template" id="productTemplate">
+        <td>{{item.name}}</td>
+        <td><input ng-model='item.quantity' /></td>
+    </script>
+    <script type="text/ng-template" id="resetTemplate">
+        <td colspan="2"><button ng-click="reset()">Reset</button></td>
+    </script>
+    <script type="text/ng-template" id="sideNavTemplate">
+        <ul>
+            <li ng-repeat="link in links">
+                <a src="{{link.url}}">
+                    {{link.name}}
+                </a>
+            </li>
+        </ul>
+    </script>
+    <script>
+        angular.module('myApp', [])
+            .controller('myCtrl', function($scope) {
+                $scope.products = [
+                    { name: "Apples", price: 1.20, quantity: 2 },
+                    { name: "Bananas", price: 2.42, quantity: 3 },
+                    { name: "Pears", price: 2.02, quantity: 1 },
+                    { name: "Watermelons", price: 6.02, quantity: 2 }
+                ];
+                $scope.totalValue = 'demoValue';
+                $scope.demo = {
+                    value: 'demoValue'
+                };
+                $scope.hey = 'hey';
+                $scope.sideNavLinks = [
+                            { name: 'item 1', url: '/link1' },
+                            { name: 'item 2', url: '/link2' },
+                            { name: 'item 3', url: '/link3' }
+                        ];
+                
+                console.log('myCtrl', $scope);
+            })
+            .directive('sideNav', function() {
+                return {
+                    restrict: 'E',
+                    transclude: true,
+                    template: document.querySelector('#sideNavTemplate').outerText,
+                    scope: {
+                        links: '=linksData'
+                    },
+                    link: function(scope, element, attrs, ctrl) {
+                        element.find('ul').css({
+                           'list-style-type': 'none'
+                        });
+                        console.log(element[0].querySelector('ul'));
+                    }
+                }
+            })
+            .directive('productItem', function() {
+                return {
+                    template: document.querySelector('#productTemplate').outerText,
+                    require: '^productTable',
+                    link: function(scope, element, attrs, ctrl) {
+                        scope.$watch('item.quantity', function() {
+                            ctrl.updateTotal();
+                        });
+                    }
+                }
+            })
+            .directive('productTable', function() {
+                return {
+                    transclude: true,
+                    scope: {
+                        value1: '=productTable',
+                        data: '=productData'
+                    },
+                    controller: function($scope) {
+                        this.updateTotal = function() {
+                            var total = 0;
+                            for(var i = 0; i < $scope.data.length; i++) {
+                                total += Number($scope.data[i].quantity);
+                            }
+                            $scope.value1 = total;
+                        };
+                        console.log('productTableCtrl', $scope);
+                    }
+                }
+            })
+            .directive('resetButton', function() {
+                return {
+                    template: document.querySelector('#resetTemplate').outerText,
+                    require: '^productTable',
+                    scope: {
+                        data: '=productData',
+                        propname: '@propName'
+                    },
+                    link: function(scope, element, attrs, ctrl) {
+                        var propName = scope.propname;
+                        scope.reset = function () {
+                            scope.data.map(function(item) {
+                                item[propName] = 0;
+                                return item[propName];
+                            });
+                        }
+                    }
+                }
+            })
+
+    </script>
+</head>
+<body ng-controller="myCtrl">
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <table 
+                class="table table-striped" 
+                product-table="total1"
+                product-data="products"
+                ng-transclude>
+                <tr><th>Name</th><th>Quantity</th></tr>
+                <tr ng-repeat="item in products" product-item></tr>
+                <tr><th>Total:</th><td>{{total1}}</td></tr>
+                <tr product-data="products" prop-name="quantity" reset-button></tr>
+            </table>
+        </div>
+    </div>
+    <side-nav links-data='sideNavLinks'></side-nav>
+</body>
+</html>
